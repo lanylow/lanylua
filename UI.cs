@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace asm_exec {
   public partial class UI : Form {
@@ -18,6 +19,27 @@ namespace asm_exec {
 
     public UI() {
       InitializeComponent();
+    }
+
+    private void WriteToStream(FileStream stream, string text) {
+      byte[] info = new UTF8Encoding(true).GetBytes(text);
+      stream.Write(info, 0, info.Length);
+    }
+
+    private string ExecuteCommand(string command) {
+      Process process = new Process();
+      process.StartInfo.FileName = "cmd.exe";
+      process.StartInfo.Arguments = "/C " + command;
+      process.StartInfo.UseShellExecute = false;
+      process.StartInfo.RedirectStandardOutput = true;
+      process.StartInfo.CreateNoWindow = true;
+      process.Start();
+
+      var res = process.StandardOutput.ReadToEnd();
+
+      process.WaitForExit();
+
+      return res;
     }
 
     private void ButtonBrowse_Click(object sender, EventArgs e) {
@@ -68,25 +90,22 @@ namespace asm_exec {
       processId = process.Id;
     }
 
-    private void WriteToStream(FileStream stream, string text) {
-      byte[] info = new UTF8Encoding(true).GetBytes(text);
-      stream.Write(info, 0, info.Length);
-    }
-
     private void ButtonExecute_Click(object sender, EventArgs e) {
-      string currentDir = Environment.CurrentDirectory;
+      string tempDir = Environment.CurrentDirectory + "\\temp";
 
-      if (!Directory.Exists(currentDir + "\\temp"))
-        Directory.CreateDirectory(currentDir + "\\temp");
+      if (!Directory.Exists(tempDir))
+        Directory.CreateDirectory(tempDir);
 
-      using (FileStream sourcePath = File.Create(currentDir + "\\temp\\code.s")) {
+      using (FileStream sourcePath = File.Create(tempDir + "\\code.s")) {
         WriteToStream(sourcePath, ".intel_syntax noprefix\r\n");
         WriteToStream(sourcePath, "n_main:\r\n");
         WriteToStream(sourcePath, TextBoxCode.Text);
         WriteToStream(sourcePath, "\r\n");
       }
 
-      Process.Start("cmd.exe", "/C gcc -m64 -c " + currentDir + "\\temp\\code.s" + " -o " + currentDir + "\\temp\\code.o");
+      ExecuteCommand("gcc -m64 -c " + tempDir + "\\code.s" + " -o " + tempDir + "\\code.o");
+      string disassembly = ExecuteCommand("objdump -z -M intel -d " + tempDir + "\\code.o").Split(new string[] { "<n_main>:\r\n" }, StringSplitOptions.None)[1];
+      Directory.Delete(tempDir, true);
     }
   }
 }

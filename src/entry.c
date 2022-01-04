@@ -63,83 +63,44 @@ int get_module_by_name(lua_State* state) {
   return 1;
 }
 
-int read_word(lua_State* state) {
-  int64_t handle = luaL_checkinteger(state, 1);
-  int64_t address = luaL_checkinteger(state, 2);
-  uint16_t buff = 0;
-
-  ReadProcessMemory((HANDLE)handle, (void*)address, &buff, 2, NULL);
-
-  lua_pushinteger(state, (int64_t)buff);
-
-  return 1;
+#define READ_FUNCTION(buff_type, buff_size, name) \
+int name(lua_State* state) { \
+  int64_t handle = luaL_checkinteger(state, 1); \
+  int64_t address = luaL_checkinteger(state, 2); \
+  buff_type buff = 0; \
+  ReadProcessMemory((HANDLE)handle, (void*)address, &buff, buff_size, NULL); \
+  lua_pushinteger(state, (int64_t)buff); \
+  return 1; \
 }
 
-int read_dword(lua_State* state) {
-  int64_t handle = luaL_checkinteger(state, 1);
-  int64_t address = luaL_checkinteger(state, 2);
-  uint32_t buff = 0;
+READ_FUNCTION(uint16_t, 2, read_word)
+READ_FUNCTION(uint32_t, 4, read_dword)
+READ_FUNCTION(uint64_t, 8, read_qword)
 
-  ReadProcessMemory((HANDLE)handle, (void*)address, &buff, 4, NULL);
+READ_FUNCTION(int16_t, 2, read_short)
+READ_FUNCTION(int32_t, 4, read_int)
+READ_FUNCTION(int64_t, 8, read_int64)
 
-  lua_pushinteger(state, (int64_t)buff);
+#undef READ_FUNCTION
 
-  return 1;
+#define WRITE_FUNCTION(buff_type, buff_size, name) \
+int name(lua_State* state) { \
+  int64_t handle = luaL_checkinteger(state, 1); \
+  int64_t address = luaL_checkinteger(state, 2); \
+  buff_type value = (uint16_t)luaL_checkinteger(state, 3); \
+  WriteProcessMemory((HANDLE)handle, (void*)address, &value, buff_size, NULL); \
+  return 1; \
 }
 
-int read_int(lua_State* state) {
-  int64_t handle = luaL_checkinteger(state, 1);
-  int64_t address = luaL_checkinteger(state, 2);
-  int32_t buff = 0;
+WRITE_FUNCTION(uint16_t, 2, write_word)
+WRITE_FUNCTION(uint32_t, 4, write_dword)
+WRITE_FUNCTION(uint64_t, 8, write_qword)
 
-  ReadProcessMemory((HANDLE)handle, (void*)address, &buff, 4, NULL);
+WRITE_FUNCTION(int16_t, 2, write_short)
+WRITE_FUNCTION(int32_t, 4, write_int)
+WRITE_FUNCTION(int64_t, 8, write_int64)
 
-  lua_pushinteger(state, (int64_t)buff);
-
-  return 1;
-}
-
-int read_qword(lua_State* state) {
-  int64_t handle = luaL_checkinteger(state, 1);
-  int64_t address = luaL_checkinteger(state, 2);
-  uint64_t buff = 0;
-
-  ReadProcessMemory((HANDLE)handle, (void*)address, &buff, 8, NULL);
-
-  lua_pushinteger(state, (int64_t)buff);
-
-  return 1;
-}
-
-int write_word(lua_State* state) {
-  int64_t handle = luaL_checkinteger(state, 1);
-  int64_t address = luaL_checkinteger(state, 2);
-  uint16_t value = (uint16_t)luaL_checkinteger(state, 3);
-
-  WriteProcessMemory((HANDLE)handle, (void*)address, &value, 2, NULL);
-
-  return 1;
-}
-
-int write_dword(lua_State* state) {
-  int64_t handle = luaL_checkinteger(state, 1);
-  int64_t address = luaL_checkinteger(state, 2);
-  uint32_t value = (uint32_t)luaL_checkinteger(state, 3);
-
-  WriteProcessMemory((HANDLE)handle, (void*)address, &value, 4, NULL);
-
-  return 1;
-}
-
-int write_qword(lua_State* state) {
-  int64_t handle = luaL_checkinteger(state, 1);
-  int64_t address = luaL_checkinteger(state, 2);
-  uint64_t value = (uint64_t)luaL_checkinteger(state, 3);
-
-  WriteProcessMemory((HANDLE)handle, (void*)address, &value, 8, NULL);
-
-  return 1;
-}
+#undef WRITE_FUNCTION
 
 int main(int argc, char** argv) {
   if (*++argv == NULL) {
@@ -166,12 +127,20 @@ int main(int argc, char** argv) {
 
   lua_register(state, "create_process", create_process);
   lua_register(state, "get_module_by_name", get_module_by_name);
+
   lua_register(state, "read_word", read_word);
   lua_register(state, "read_dword", read_dword);
   lua_register(state, "read_qword", read_qword);
+  lua_register(state, "read_short", read_short);
+  lua_register(state, "read_int", read_int);
+  lua_register(state, "read_int64", read_int64);
+
   lua_register(state, "write_word", write_word);
   lua_register(state, "write_dword", write_dword);
   lua_register(state, "write_qword", write_qword);
+  lua_register(state, "write_short", write_short);
+  lua_register(state, "write_int", write_int);
+  lua_register(state, "write_int64", write_int64);
 
   printf("[LANYLUA] running file %s\n", input_file);
   luaL_dofile(state, input_file);

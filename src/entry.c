@@ -18,6 +18,20 @@ int sleep(lua_State* state) {
   return 1;
 }
 
+int is_process_running(lua_State* state) {
+  int64_t handle = luaL_checkinteger(state, 1);
+  unsigned long exit_code = 0;
+  GetExitCodeProcess((HANDLE)handle, &exit_code);
+  lua_pushboolean(state, exit_code == STILL_ACTIVE);
+  return 1;
+}
+
+int get_async_key_state(lua_State* state) {
+  int64_t key = luaL_checkinteger(state, 1);
+  lua_pushinteger(state, GetAsyncKeyState((int)key));
+  return 1;
+}
+
 int create_process(lua_State* state) {
   const char* path = luaL_checkstring(state, 1);
   
@@ -60,6 +74,43 @@ int get_module_by_name(lua_State* state) {
 
   lua_pushinteger(state, res);
 
+  return 1;
+}
+
+int get_process_id_by_name(lua_State* state) {
+  const char* name = luaL_checkstring(state, 1);
+
+  HMODULE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  PROCESSENTRY32 process_entry;
+  int64_t res = 0;
+
+  process_entry.dwSize = sizeof(process_entry);
+
+  if (Process32First(snapshot, &process_entry)) {
+    do {
+      if (!_stricmp(process_entry.szExeFile, name)) {
+        res = (int64_t)process_entry.th32ProcessID;
+        break;
+      }
+    } while (Process32Next(snapshot, &process_entry));
+  }
+
+  CloseHandle(snapshot);
+
+  lua_pushinteger(state, res);
+
+  return 1;
+}
+
+int close_handle(lua_State* state) {
+  int64_t handle = luaL_checkinteger(state, 1);
+  CloseHandle((HANDLE)handle);
+  return 1;
+}
+
+int open_process(lua_State* state) {
+  int64_t process_id = luaL_checkinteger(state, 1);
+  lua_pushinteger(state, (int64_t)OpenProcess(PROCESS_ALL_ACCESS, FALSE, (unsigned long)process_id));
   return 1;
 }
 
@@ -124,9 +175,14 @@ int main(int argc, char** argv) {
   printf("[LANYLUA] registering functions\n");
   lua_register(state, "get_executor_version", get_executor_version);
   lua_register(state, "sleep", sleep);
+  lua_register(state, "is_process_running", is_process_running);
+  lua_register(state, "get_async_key_state", get_async_key_state);
 
   lua_register(state, "create_process", create_process);
   lua_register(state, "get_module_by_name", get_module_by_name);
+  lua_register(state, "get_process_id_by_name", get_process_id_by_name);
+  lua_register(state, "close_handle", close_handle);
+  lua_register(state, "open_process", open_process);
 
   lua_register(state, "read_word", read_word);
   lua_register(state, "read_dword", read_dword);

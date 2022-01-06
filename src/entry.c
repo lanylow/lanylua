@@ -124,10 +124,12 @@ int name(lua_State* state) { \
   return 1; \
 }
 
+READ_FUNCTION(uint8_t, 1, read_byte)
 READ_FUNCTION(uint16_t, 2, read_word)
 READ_FUNCTION(uint32_t, 4, read_dword)
 READ_FUNCTION(uint64_t, 8, read_qword)
 
+READ_FUNCTION(int8_t, 1, read_char)
 READ_FUNCTION(int16_t, 2, read_short)
 READ_FUNCTION(int32_t, 4, read_int)
 READ_FUNCTION(int64_t, 8, read_int64)
@@ -143,10 +145,12 @@ int name(lua_State* state) { \
   return 1; \
 }
 
+WRITE_FUNCTION(uint8_t, 1, write_byte)
 WRITE_FUNCTION(uint16_t, 2, write_word)
 WRITE_FUNCTION(uint32_t, 4, write_dword)
 WRITE_FUNCTION(uint64_t, 8, write_qword)
 
+WRITE_FUNCTION(int8_t, 1, write_char)
 WRITE_FUNCTION(int16_t, 2, write_short)
 WRITE_FUNCTION(int32_t, 4, write_int)
 WRITE_FUNCTION(int64_t, 8, write_int64)
@@ -184,16 +188,20 @@ int main(int argc, char** argv) {
   lua_register(state, "close_handle", close_handle);
   lua_register(state, "open_process", open_process);
 
+  lua_register(state, "read_byte", read_byte);
   lua_register(state, "read_word", read_word);
   lua_register(state, "read_dword", read_dword);
   lua_register(state, "read_qword", read_qword);
+  lua_register(state, "read_char", read_char);
   lua_register(state, "read_short", read_short);
   lua_register(state, "read_int", read_int);
   lua_register(state, "read_int64", read_int64);
 
+  lua_register(state, "write_byte", write_byte);
   lua_register(state, "write_word", write_word);
   lua_register(state, "write_dword", write_dword);
   lua_register(state, "write_qword", write_qword);
+  lua_register(state, "write_char", write_char);
   lua_register(state, "write_short", write_short);
   lua_register(state, "write_int", write_int);
   lua_register(state, "write_int64", write_int64);

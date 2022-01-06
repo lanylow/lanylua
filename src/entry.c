@@ -13,13 +13,13 @@ int get_executor_version(lua_State* state) {
 }
 
 int sleep(lua_State* state) {
-  int64_t time = luaL_checkinteger(state, 1);
+  lua_Integer time = luaL_checkinteger(state, 1);
   Sleep((unsigned long)time);
   return 1;
 }
 
 int is_process_running(lua_State* state) {
-  int64_t handle = luaL_checkinteger(state, 1);
+  lua_Integer handle = luaL_checkinteger(state, 1);
   unsigned long exit_code = 0;
   GetExitCodeProcess((HANDLE)handle, &exit_code);
   lua_pushboolean(state, exit_code == STILL_ACTIVE);
@@ -27,7 +27,7 @@ int is_process_running(lua_State* state) {
 }
 
 int get_async_key_state(lua_State* state) {
-  int64_t key = luaL_checkinteger(state, 1);
+  lua_Integer key = luaL_checkinteger(state, 1);
   lua_pushinteger(state, GetAsyncKeyState((int)key));
   return 1;
 }
@@ -38,11 +38,11 @@ int create_process(lua_State* state) {
   STARTUPINFO startup_info = { 0 };
   PROCESS_INFORMATION process_info = { 0 };
 
-  int64_t res = CreateProcessA(path, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_info);
+  lua_Integer res = CreateProcessA(path, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &startup_info, &process_info);
   CloseHandle(process_info.hThread);
 
-  int64_t process_id = (int64_t)process_info.dwProcessId;
-  int64_t handle = (int64_t)process_info.hProcess;
+  lua_Integer process_id = (lua_Integer)process_info.dwProcessId;
+  lua_Integer handle = (lua_Integer)process_info.hProcess;
 
   lua_pushinteger(state, res);
   lua_pushinteger(state, process_id);
@@ -52,19 +52,19 @@ int create_process(lua_State* state) {
 }
 
 int get_module_by_name(lua_State* state) {
-  int64_t process_id = luaL_checkinteger(state, 1);
+  lua_Integer process_id = luaL_checkinteger(state, 1);
   const char* module = luaL_checkstring(state, 2);
 
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, (unsigned long)process_id);
   MODULEENTRY32 module_entry;
-  int64_t res = 0;
+  lua_Integer res = 0;
 
   module_entry.dwSize = sizeof(module_entry);
 
   if (Module32First(snapshot, &module_entry)) {
     do {
       if (!_stricmp(module_entry.szModule, module)) {
-        res = (int64_t)module_entry.modBaseAddr;
+        res = (lua_Integer)module_entry.modBaseAddr;
         break;
       }
     } while (Module32Next(snapshot, &module_entry));
@@ -82,14 +82,14 @@ int get_process_id_by_name(lua_State* state) {
 
   HMODULE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   PROCESSENTRY32 process_entry;
-  int64_t res = 0;
+  lua_Integer res = 0;
 
   process_entry.dwSize = sizeof(process_entry);
 
   if (Process32First(snapshot, &process_entry)) {
     do {
       if (!_stricmp(process_entry.szExeFile, name)) {
-        res = (int64_t)process_entry.th32ProcessID;
+        res = (lua_Integer)process_entry.th32ProcessID;
         break;
       }
     } while (Process32Next(snapshot, &process_entry));
@@ -103,24 +103,24 @@ int get_process_id_by_name(lua_State* state) {
 }
 
 int close_handle(lua_State* state) {
-  int64_t handle = luaL_checkinteger(state, 1);
+  lua_Integer handle = luaL_checkinteger(state, 1);
   CloseHandle((HANDLE)handle);
   return 1;
 }
 
 int open_process(lua_State* state) {
-  int64_t process_id = luaL_checkinteger(state, 1);
-  lua_pushinteger(state, (int64_t)OpenProcess(PROCESS_ALL_ACCESS, FALSE, (unsigned long)process_id));
+  lua_Integer process_id = luaL_checkinteger(state, 1);
+  lua_pushinteger(state, (lua_Integer)OpenProcess(PROCESS_ALL_ACCESS, FALSE, (unsigned long)process_id));
   return 1;
 }
 
 #define READ_FUNCTION(buff_type, buff_size, name) \
 int name(lua_State* state) { \
-  int64_t handle = luaL_checkinteger(state, 1); \
-  int64_t address = luaL_checkinteger(state, 2); \
+  lua_Integer handle = luaL_checkinteger(state, 1); \
+  lua_Integer address = luaL_checkinteger(state, 2); \
   buff_type buff = 0; \
   ReadProcessMemory((HANDLE)handle, (void*)address, &buff, buff_size, NULL); \
-  lua_pushinteger(state, (int64_t)buff); \
+  lua_pushinteger(state, (lua_Integer)buff); \
   return 1; \
 }
 
@@ -136,9 +136,9 @@ READ_FUNCTION(int64_t, 8, read_int64)
 
 #define WRITE_FUNCTION(buff_type, buff_size, name) \
 int name(lua_State* state) { \
-  int64_t handle = luaL_checkinteger(state, 1); \
-  int64_t address = luaL_checkinteger(state, 2); \
-  buff_type value = (uint16_t)luaL_checkinteger(state, 3); \
+  lua_Integer handle = luaL_checkinteger(state, 1); \
+  lua_Integer address = luaL_checkinteger(state, 2); \
+  buff_type value = (buff_type)luaL_checkinteger(state, 3); \
   WriteProcessMemory((HANDLE)handle, (void*)address, &value, buff_size, NULL); \
   return 1; \
 }

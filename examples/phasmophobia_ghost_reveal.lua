@@ -1,6 +1,8 @@
 -- Update these offsets
 LevelController_TypeInfo = 63552680;
+LevelController_GhostRoom = 0x28;
 LevelController_GhostAI = 0x30;
+LevelRoom_Name = 0x58;
 GhostAI_GhostInfo = 0x38;
 GhostInfo_Type = 0x20;
 GhostInfo_Age = 0x24;
@@ -99,6 +101,8 @@ ghost = read_qword(handle, static_fields + LevelController_GhostAI);
 if (ghost == 0) then error("Current ghost pointer is 0, make sure you're in game") end
 
 ghost_info = read_qword(handle, ghost + GhostAI_GhostInfo);
+ghost_room = read_qword(handle, static_fields + LevelController_GhostRoom);
+room_name = read_string(read_qword(handle, ghost_room + LevelRoom_Name));
 
 type = read_int(handle, ghost_info + GhostInfo_Type);
 age = read_int(handle, ghost_info + GhostInfo_Age);
@@ -113,5 +117,6 @@ print("  Age: " .. age);
 print("  Male: " .. (is_male == 1 and "Yes" or "No"));
 print("  Shy: " .. (is_shy == 1 and "Yes" or "No"));
 print("  Name: " .. name);
+print("  Room: " .. room_name);
 
 close_handle(handle);

@@ -1,5 +1,5 @@
 -- Update these offsets
-LevelController_TypeInfo = 63552680;
+LevelController_TypeInfo = 63522288;
 LevelController_GhostRoom = 0x28;
 LevelController_GhostAI = 0x30;
 LevelRoom_Name = 0x58;

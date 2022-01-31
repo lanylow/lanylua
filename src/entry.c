@@ -7,6 +7,9 @@
 #include <windows.h>
 #include <tlhelp32.h>
 
+__declspec(dllimport) long __stdcall NtSuspendProcess(HANDLE handle);
+__declspec(dllimport) long __stdcall NtResumeProcess(HANDLE handle);
+
 int get_executor_version(lua_State* state) {
   lua_pushstring(state, "lanylua v0.1A");
   return 1;
@@ -114,6 +117,18 @@ int open_process(lua_State* state) {
   return 1;
 }
 
+int suspend_process(lua_State* state) {
+  lua_Integer handle = luaL_checkinteger(state, 1);
+  NtSuspendProcess((HANDLE)handle);
+  return 1;
+}
+
+int resume_process(lua_State* state) {
+  lua_Integer handle = luaL_checkinteger(state, 1);
+  NtResumeProcess((HANDLE)handle);
+  return 1;
+}
+
 #define READ_FUNCTION(buff_type, buff_size, name) \
 int name(lua_State* state) { \
   lua_Integer handle = luaL_checkinteger(state, 1); \
@@ -159,24 +174,20 @@ WRITE_FUNCTION(int64_t, 8, write_int64)
 
 int main(int argc, char** argv) {
   if (*++argv == NULL) {
-    fprintf(stderr, "[LANYLUA] ERROR: no input file provided\n");
+    fprintf(stderr, "ERROR: no input file provided\n");
     exit(1);
   }
 
   char* input_file = *argv;
-
-  printf("[LANYLUA] creating new lua state\n");
   lua_State* state = luaL_newstate();
 
   if (state == NULL) {
-    fprintf(stderr, "[LANYLUA] ERROR: failed to create new lua state\n");
+    fprintf(stderr, "ERROR: failed to create new lua state\n");
     exit(1);
   }
 
-  printf("[LANYLUA] loading lua standard libraries\n");
   luaL_openlibs(state);
 
-  printf("[LANYLUA] registering functions\n");
   lua_register(state, "get_executor_version", get_executor_version);
   lua_register(state, "sleep", sleep);
   lua_register(state, "is_process_running", is_process_running);
@@ -187,6 +198,8 @@ int main(int argc, char** argv) {
   lua_register(state, "get_process_id_by_name", get_process_id_by_name);
   lua_register(state, "close_handle", close_handle);
   lua_register(state, "open_process", open_process);
+  lua_register(state, "suspend_process", suspend_process);
+  lua_register(state, "resume_process", resume_process);
 
   lua_register(state, "read_byte", read_byte);
   lua_register(state, "read_word", read_word);
@@ -206,7 +219,6 @@ int main(int argc, char** argv) {
   lua_register(state, "write_int", write_int);
   lua_register(state, "write_int64", write_int64);
 
-  printf("[LANYLUA] running file %s\n", input_file);
   luaL_dofile(state, input_file);
 
   return 0;
